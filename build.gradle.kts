@@ -47,6 +47,18 @@ allprojects {
             publications.withType<MavenPublication>().configureEach {
             }
         }
+
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            publishing.repositories.withType<MavenArtifactRepository>().configureEach {
+                val original = url.toString()
+                if (original.startsWith("file://") && original.contains("\\")) {
+                    val normalized = original
+                        .replace("\\", "/")
+                        .replaceFirst("file://", "file:///")
+                    setUrl(java.net.URI.create(normalized))
+                }
+            }
+        }
     }
 
     plugins.withId("com.vanniktech.maven.publish") {
