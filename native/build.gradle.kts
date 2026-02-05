@@ -15,8 +15,10 @@ buildscript {
 
 plugins {
     base
-    `maven-publish`
+    `java-library`
+    alias(libs.plugins.vanniktech.maven.publish)
 }
+
 
 val main: Configuration by configurations.creating
 

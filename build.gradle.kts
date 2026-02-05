@@ -1,6 +1,8 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.gradle.api.tasks.javadoc.Javadoc
 import java.net.URLClassLoader
 import kotlin.reflect.full.functions
 import kotlin.reflect.jvm.isAccessible
@@ -10,11 +12,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose)
     alias(libs.plugins.bytebuddy)
-    `maven-publish`
+    alias(libs.plugins.vanniktech.maven.publish)
 }
 
+
 allprojects {
-    apply<MavenPublishPlugin>()
     apply<BasePlugin>()
 
     repositories {
@@ -26,21 +28,38 @@ allprojects {
         google()
     }
 
-    this.group = "dev.silenium.compose.gl"
+    this.group = "dev.brahmkshatriya.compose.gl"
     this.version = findProperty("deploy.version") as String? ?: "0.0.0-SNAPSHOT"
 
-    publishing {
-        repositories {
-            val url = System.getenv("MAVEN_REPO_URL") ?: return@repositories
-            maven(url) {
-                name = "reposilite"
-                credentials {
-                    username = System.getenv("MAVEN_REPO_USERNAME") ?: ""
-                    password = System.getenv("MAVEN_REPO_PASSWORD") ?: ""
+    plugins.withId("maven-publish") {
+        publishing {
+            repositories {
+                val url = System.getenv("MAVEN_REPO_URL") ?: return@repositories
+                maven(url) {
+                    name = "reposilite"
+                    credentials {
+                        username = System.getenv("MAVEN_REPO_USERNAME") ?: ""
+                        password = System.getenv("MAVEN_REPO_PASSWORD") ?: ""
+                    }
                 }
+            }
+
+            publications.withType<MavenPublication>().configureEach {
             }
         }
     }
+
+    plugins.withId("com.vanniktech.maven.publish") {
+        mavenPublishing {
+            publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+            signAllPublications()
+        }
+    }
+
+    tasks.withType<Javadoc>().configureEach {
+        isFailOnError = false
+    }
+
 }
 
 val deployNative = (findProperty("deploy.native") as String?)?.toBoolean() ?: true
@@ -52,7 +71,7 @@ dependencies {
     implementation(compose.desktop.common)
     implementation(libs.jni.utils)
     implementation(libs.slf4j.api)
-    implementation(kotlin("reflect"))
+    implementation(libs.kotlin.reflect)
     if (deployNative) {
         implementation(project(":native", configuration = "main"))
     }
@@ -66,7 +85,7 @@ dependencies {
     }
 
     implementation(libs.bundles.kotlinx.coroutines)
-    implementation("net.java.dev.jna:jna")
+    implementation(libs.jna)
     api(libs.bundles.skiko)
 
     testImplementation(compose.desktop.currentOs)
@@ -75,7 +94,6 @@ dependencies {
 }
 
 java {
-    withSourcesJar()
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
 }
@@ -117,12 +135,3 @@ compose.desktop {
     }
 }
 
-publishing {
-    publications {
-        if (deployKotlin) {
-            create<MavenPublication>("maven") {
-                from(components["java"])
-            }
-        }
-    }
-}

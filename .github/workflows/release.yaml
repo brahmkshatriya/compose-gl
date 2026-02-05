@@ -1,0 +1,75 @@
+name: "Release to Maven Central"
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+  ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+  ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_SIGNING_KEY }}
+  ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_SIGNING_KEY_PASSWORD }}
+
+jobs:
+  native:
+    name: "Publish native ${{ matrix.platform }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: ubuntu-22.04
+          - platform: linux-arm64
+            os: ubuntu-22.04
+          - platform: windows-x86_64
+            os: windows-latest
+          - platform: windows-arm64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Ensure Gradle wrapper is executable
+        if: runner.os != 'Windows'
+        run: chmod +x ./gradlew
+      - name: Publish native publication
+        shell: bash
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION#v}
+          ./gradlew :native:publishAllPublicationsToMavenCentralRepository \
+            -Pdeploy.native=true \
+            -Pdeploy.kotlin=false \
+            -Pdeploy.platform=${{ matrix.platform }} \
+            -Pdeploy.version=${VERSION}
+
+  jvm:
+    name: "Publish JVM + natives-all"
+    runs-on: ubuntu-22.04
+    needs: [ native ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+      - name: Publish JVM artifacts
+        shell: bash
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION=${VERSION#v}
+          ./gradlew publishToMavenCentral \
+            -Pdeploy.native=false \
+            -Pdeploy.kotlin=true \
+            -Pdeploy.version=${VERSION}

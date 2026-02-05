@@ -16,68 +16,40 @@ permissions:
   pull-requests: write
   contents: write
 jobs:
-  linux-x86_64:
-    runs-on: ubuntu-22.04
+  build-jars:
+    name: "Build jars (${{ matrix.platform }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: ubuntu-22.04
+          - platform: linux-arm64
+            os: ubuntu-22.04
+          - platform: windows-x86_64
+            os: windows-latest
+          - platform: windows-arm64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: silenium-dev/actions/jni-natives/ubuntu@main
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          gradle-cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          snapshot-repo-url: "https://reposilite.silenium.dev/snapshots"
-          release-repo-url: "https://reposilite.silenium.dev/releases"
-          repo-username: ${{ secrets.REPOSILITE_USERNAME }}
-          repo-password: ${{ secrets.REPOSILITE_PASSWORD }}
-          tests: false
+          distribution: temurin
           java-version: 17
-          platform: ${{ github.job }}
-  linux-arm64:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: silenium-dev/actions/jni-natives/ubuntu@main
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build jar libraries
+        run: |
+          ./gradlew jar \
+            :native:nativeJar \
+            :native-all:jar \
+            -Pdeploy.platform=${{ matrix.platform }}
+      - name: Upload jar artifacts
+        uses: actions/upload-artifact@v4
         with:
-          gradle-cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          snapshot-repo-url: "https://reposilite.silenium.dev/snapshots"
-          release-repo-url: "https://reposilite.silenium.dev/releases"
-          repo-username: ${{ secrets.REPOSILITE_USERNAME }}
-          repo-password: ${{ secrets.REPOSILITE_PASSWORD }}
-          tests: false
-          java-version: 17
-          platform: ${{ github.job }}
-  windows-x86_64:
-    runs-on: windows-latest
-    steps:
-      - uses: silenium-dev/actions/jni-natives/windows@main
-        with:
-          gradle-cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          snapshot-repo-url: "https://reposilite.silenium.dev/snapshots"
-          release-repo-url: "https://reposilite.silenium.dev/releases"
-          repo-username: ${{ secrets.REPOSILITE_USERNAME }}
-          repo-password: ${{ secrets.REPOSILITE_PASSWORD }}
-          tests: false
-          java-version: 17
-          platform: ${{ github.job }}
-  windows-arm64:
-    runs-on: windows-latest
-    steps:
-      - uses: silenium-dev/actions/jni-natives/windows@main
-        with:
-          gradle-cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          snapshot-repo-url: "https://reposilite.silenium.dev/snapshots"
-          release-repo-url: "https://reposilite.silenium.dev/releases"
-          repo-username: ${{ secrets.REPOSILITE_USERNAME }}
-          repo-password: ${{ secrets.REPOSILITE_PASSWORD }}
-          tests: false
-          java-version: 17
-          platform: ${{ github.job }}
-  kotlin:
-    runs-on: ubuntu-22.04
-    needs: [ linux-x86_64, linux-arm64, windows-x86_64, windows-arm64 ]
-    steps:
-      - uses: silenium-dev/actions/kotlin@main
-        with:
-          gradle-cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
-          snapshot-repo-url: "https://reposilite.silenium.dev/snapshots"
-          release-repo-url: "https://reposilite.silenium.dev/releases"
-          repo-username: ${{ secrets.REPOSILITE_USERNAME }}
-          repo-password: ${{ secrets.REPOSILITE_PASSWORD }}
-          tests: false
-          java-version: 17
+          name: jars-${{ matrix.platform }}
+          if-no-files-found: error
+          path: |
+            build/libs/*.jar
+            native/build/libs/*.jar
+            native-all/build/libs/*.jar
