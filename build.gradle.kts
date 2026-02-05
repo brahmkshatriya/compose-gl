@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.gradle.api.tasks.javadoc.Javadoc
+import java.net.URI
 import java.net.URLClassLoader
 import kotlin.reflect.full.functions
 import kotlin.reflect.jvm.isAccessible
@@ -55,7 +56,7 @@ allprojects {
                     val normalized = original
                         .replace("\\", "/")
                         .replaceFirst("file://", "file:///")
-                    setUrl(java.net.URI.create(normalized))
+                    setUrl(URI.create(normalized))
                 }
             }
         }
