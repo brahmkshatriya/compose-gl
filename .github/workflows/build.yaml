@@ -43,7 +43,9 @@ jobs:
           ./gradlew jar \
             :native:nativeJar \
             :native-all:jar \
-            -Pdeploy.platform=${{ matrix.platform }}
+            -Pdeploy.platform=${{ matrix.platform }} \
+            -Pdeploy.native=true \
+            -Pdeploy.kotlin=true
       - name: Upload jar artifacts
         uses: actions/upload-artifact@v4
         with:
