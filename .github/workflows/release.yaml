@@ -36,6 +36,15 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Install Linux arm64 cross toolchain
+        if: ${{ matrix.platform == 'linux-arm64' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
+            libc6-dev-arm64-cross
       - uses: gradle/actions/setup-gradle@v4
       - name: Ensure Gradle wrapper is executable
         if: runner.os != 'Windows'
