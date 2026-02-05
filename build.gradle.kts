@@ -3,7 +3,6 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.gradle.api.tasks.javadoc.Javadoc
-import java.net.URI
 import java.net.URLClassLoader
 import kotlin.reflect.full.functions
 import kotlin.reflect.jvm.isAccessible
@@ -49,17 +48,6 @@ allprojects {
             }
         }
 
-        if (System.getProperty("os.name").startsWith("Windows")) {
-            publishing.repositories.withType<MavenArtifactRepository>().configureEach {
-                val original = url.toString()
-                if (original.startsWith("file://") && original.contains("\\")) {
-                    val normalized = original
-                        .replace("\\", "/")
-                        .replaceFirst("file://", "file:///")
-                    setUrl(URI.create(normalized))
-                }
-            }
-        }
     }
 
     plugins.withId("com.vanniktech.maven.publish") {
