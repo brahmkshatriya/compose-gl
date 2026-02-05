@@ -12,9 +12,8 @@ plugins {
 
 rootProject.name = "compose-gl"
 
-val projectProps = gradle.startParameter.projectProperties
-val deployNative = projectProps["deploy.native"]?.toBoolean() ?: true
-val deployKotlin = projectProps["deploy.kotlin"]?.toBoolean() ?: true
+val deployNative = providers.gradleProperty("deploy.native").orNull?.toBoolean() ?: true
+val deployKotlin = providers.gradleProperty("deploy.kotlin").orNull?.toBoolean() ?: false
 if (deployNative) {
     include(":native")
 }

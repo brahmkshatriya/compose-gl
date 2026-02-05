@@ -47,8 +47,8 @@ jobs:
             binutils-aarch64-linux-gnu \
             libc6-dev-arm64-cross
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build jar libraries (non-Windows)
-        if: ${{ runner.os != 'Windows' }}
+      - name: Build jar libraries
+        shell: bash
         run: |
           ./gradlew jar \
             :native:nativeJar \
@@ -56,11 +56,6 @@ jobs:
             -Pdeploy.platform=${{ matrix.platform }} \
             -Pdeploy.native=true \
             -Pdeploy.kotlin=true
-      - name: Build jar libraries (Windows)
-        if: ${{ runner.os == 'Windows' }}
-        shell: cmd
-        run: >-
-          call gradlew.bat jar :native:nativeJar :native-all:jar -Pdeploy.platform=${{ matrix.platform }} -Pdeploy.native=true -Pdeploy.kotlin=true
       - name: Upload jar artifacts
         uses: actions/upload-artifact@v4
         with:
